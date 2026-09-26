@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vital Arcade — Nursing Skills Practice</title>
+<style>
+  :root{
+    --paper:#fff0f5; --paper2:#ffe0ec; --grid:rgba(219,39,119,0.10);
+    --ink:#5a1a3a; --ink-muted:#a8577f; --line:rgba(90,26,58,0.20);
+    --pulse:#ff4f93; --chart-red:#ff477e; --good:#2f9e64; --bad:#e0356f;
+    --stamp:#c2185b; --heart-color:#ff8fab;
+    box-sizing:border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#2a0f1c; --paper2:#3a1526; --grid:rgba(255,150,190,0.10);
+      --ink:#ffe3ee; --ink-muted:#e0a8c2; --line:rgba(255,227,238,0.20);
+      --pulse:#ff7fb4; --chart-red:#ff8fae; --good:#63d29a; --bad:#ff7fa0;
+      --stamp:#ffb3d1;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#2a0f1c; --paper2:#3a1526; --grid:rgba(255,150,190,0.10);
+    --ink:#ffe3ee; --ink-muted:#e0a8c2; --line:rgba(255,227,238,0.20);
+    --pulse:#ff7fb4; --chart-red:#ff8fae; --good:#63d29a; --bad:#ff7fa0;
+    --stamp:#ffb3d1;
+  }
+  html,body{height:100%;}
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--paper2); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    display:flex; align-items:center; justify-content:center;
+    min-height:100%; padding:16px; position:relative; overflow-x:hidden;
+  }
+
+  /* ---- Pixel hearts background ---- */
+  .hearts-bg{ position:fixed; inset:0; overflow:hidden; pointer-events:none; z-index:0; }
+  .heart-particle{
+    position:absolute; bottom:-40px; left:0;
+    animation-name:floatHeart; animation-timing-function:linear; animation-iteration-count:infinite;
+    opacity:0;
+  }
+  .pixel-heart{
+    width:4px; height:4px; background:var(--heart-color);
+    image-rendering:pixelated;
+    box-shadow:
+      4px 0 0 0 var(--heart-color),
+      12px 0 0 0 var(--heart-color),
+      16px 0 0 0 var(--heart-color),
+      -4px 4px 0 0 var(--heart-color),
+      0 4px 0 0 var(--heart-color),
+      4px 4px 0 0 var(--heart-color),
+      8px 4px 0 0 var(--heart-color),
+      12px 4px 0 0 var(--heart-color),
+      16px 4px 0 0 var(--heart-color),
+      20px 4px 0 0 var(--heart-color),
+      -4px 8px 0 0 var(--heart-color),
+      0 8px 0 0 var(--heart-color),
+      4px 8px 0 0 var(--heart-color),
+      8px 8px 0 0 var(--heart-color),
+      12px 8px 0 0 var(--heart-color),
+      16px 8px 0 0 var(--heart-color),
+      20px 8px 0 0 var(--heart-color),
+      0 12px 0 0 var(--heart-color),
+      4px 12px 0 0 var(--heart-color),
+      8px 12px 0 0 var(--heart-color),
+      12px 12px 0 0 var(--heart-color),
+      16px 12px 0 0 var(--heart-color),
+      4px 16px 0 0 var(--heart-color),
+      8px 16px 0 0 var(--heart-color),
+      12px 16px 0 0 var(--heart-color),
+      8px 20px 0 0 var(--heart-color);
+  }
+  @keyframes floatHeart{
+    0%{ transform:translateY(0) scale(var(--s,1)) rotate(0deg); opacity:0; }
+    10%{ opacity:0.65; }
+    50%{ transform:translateY(-58vh) scale(var(--s,1)) rotate(8deg); }
+    90%{ opacity:0.65; }
+    100%{ transform:translateY(-118vh) scale(var(--s,1)) rotate(-6deg); opacity:0; }
+  }
+
+  .wrap{ width:100%; max-width:420px; position:relative; z-index:1; }
+  .card{
+    background:
+      repeating-linear-gradient(0deg, var(--grid) 0 1px, transparent 1px 24px),
+      repeating-linear-gradient(90deg, var(--grid) 0 1px, transparent 1px 24px),
+      var(--paper);
+    border:1px solid var(--line); border-radius:4px; padding:18px;
+    box-shadow:5px 5px 0 rgba(0,0,0,0.08);
+    position:relative; overflow:hidden;
+  }
+  .screen.hidden{ display:none; }
+  h1,h2,h3{ margin:0; font-family:Rockwell,'Roboto Slab',Georgia,serif; }
+  .headband{ display:flex; align-items:baseline; justify-content:space-between; border-bottom:2px solid var(--ink); padding-bottom:8px; margin-bottom:14px; }
+  .icon-btn{
+    background:none; border:1px solid var(--line); border-radius:3px; color:var(--ink-muted);
+    font-size:0.78rem; font-weight:700; padding:5px 9px; cursor:pointer; font-family:inherit;
+  }
+  .icon-btn:active{ background:var(--line); }
+
+  /* ---- Menu ---- */
+  .title{
+    font-size:1.9rem; font-weight:800; letter-spacing:0.2px; color:var(--ink); line-height:1.1;
+  }
+  .subtitle{ color:var(--ink-muted); font-size:0.82rem; margin-top:2px; }
+  .dedication{
+    font-size:0.78rem; font-style:italic; color:var(--ink-muted); text-align:right;
+    margin:-4px 0 16px; padding-right:2px; border-right:2px solid var(--line);
+  }
+  .modecard{
+    border:1px solid var(--line); border-radius:4px; padding:14px; margin-bottom:12px;
+    background:var(--paper); position:relative;
+  }
+  .modecard::before{
+    content:attr(data-tag); position:absolute; top:-9px; left:12px; background:var(--paper2);
+    padding:0 6px; font-size:0.68rem; letter-spacing:0.4px; color:var(--stamp); font-weight:700;
+    border:1px solid var(--line); border-radius:3px;
+  }
+  .modecard h3{ font-size:1.02rem; margin-bottom:5px; }
+  .modecard p{ font-size:0.82rem; color:var(--ink-muted); margin:0 0 12px; line-height:1.45; }
+  .primary-btn{
+    display:block; width:100%; background:var(--pulse); color:#fff;
+    border:none; border-radius:3px; padding:12px; font-size:0.92rem; font-weight:700;
+    cursor:pointer; font-family:inherit; box-shadow:3px 3px 0 var(--line);
+  }
+  .primary-btn:active{ transform:translate(2px,2px); box-shadow:1px 1px 0 var(--line); }
+  .ghost-btn{
+    display:block; width:100%; background:transparent; color:var(--ink-muted);
+    border:1px solid var(--line); border-radius:3px; padding:10px; font-size:0.86rem;
+    font-weight:700; cursor:pointer; margin-top:9px; font-family:inherit;
+  }
+  .bestscore{ font-size:0.76rem; color:var(--ink-muted); margin-top:2px; min-height:1.1em; font-family:'SFMono-Regular',Consolas,monospace; }
+
+  /* ---- Pulse Rush ---- */
+  .hud{ display:flex; justify-content:space-between; align-items:center; font-family:'SFMono-Regular',Consolas,monospace; font-size:0.82rem; color:var(--ink-muted); margin-bottom:8px; }
+  .hud b{ color:var(--ink); font-weight:700; }
+  .streak{ font-weight:700; color:var(--stamp); }
+  .timerbar{ height:5px; background:var(--line); margin-bottom:12px; }
+  .timerfill{ height:100%; background:var(--chart-red); width:100%; transform-origin:left; }
+  .prompt{ text-align:center; font-size:1.12rem; font-weight:700; margin:4px 0 14px; min-height:1.6em; font-family:Rockwell,'Roboto Slab',Georgia,serif; }
+  .stage{ width:100%; touch-action:manipulation; position:relative; }
+  .stage svg{ width:100%; height:auto; display:block; }
+  .dot-hit{ cursor:pointer; }
+  .dot-visible{ pointer-events:none; }
+  .feedback{ text-align:center; font-weight:700; min-height:1.4em; margin-top:10px; font-size:0.9rem; }
+  .feedback.good{ color:var(--good); }
+  .feedback.bad{ color:var(--bad); }
+  .shake{ animation:shake 0.35s; }
+  @keyframes shake{ 10%,90%{transform:translateX(-2px);} 20%,80%{transform:translateX(4px);} 30%,50%,70%{transform:translateX(-8px);} 40%,60%{transform:translateX(8px);} }
+  .particle{ position:fixed; width:6px; height:6px; pointer-events:none; z-index:999; }
+
+  .pauseOverlay{
+    position:absolute; inset:0; background:var(--paper); opacity:0.98;
+    display:flex; align-items:center; justify-content:center; flex-direction:column;
+    z-index:50;
+  }
+  .pauseOverlay.hidden{ display:none; }
+  .pauseOverlay h2{ font-size:1.3rem; margin-bottom:16px; }
+  .pauseOverlay .primary-btn, .pauseOverlay .ghost-btn{ max-width:220px; }
+
+  /* ---- Result (Pulse Rush) ---- */
+  .result{ text-align:center; }
+  .result .score{ font-size:2.2rem; font-weight:800; margin:8px 0; font-family:'SFMono-Regular',Consolas,monospace; color:var(--ink); }
+  .result .best{ font-size:0.82rem; color:var(--ink-muted); margin-bottom:14px; }
+
+  /* ---- Lessons ---- */
+  .lesson-item{
+    display:flex; justify-content:space-between; align-items:center;
+    border:1px solid var(--line); border-radius:3px; padding:12px 13px; margin-bottom:9px;
+    cursor:pointer; background:var(--paper);
+  }
+  .lesson-item:active{ transform:translate(1px,1px); }
+  .lesson-item .li-title{ font-weight:700; font-size:0.93rem; }
+  .lesson-item .li-sub{ font-size:0.74rem; color:var(--ink-muted); margin-top:2px; font-family:'SFMono-Regular',Consolas,monospace; }
+  .lesson-item .li-badge{ font-size:0.74rem; color:var(--pulse); font-weight:700; }
+  .lesson-item.done{ opacity:0.7; }
+  .lesson-num{ font-family:'SFMono-Regular',Consolas,monospace; color:var(--ink-muted); font-size:0.78rem; margin-right:8px; }
+
+  .lesson-title{ font-size:1.15rem; font-weight:800; margin-bottom:10px; }
+  .lesson-content p{ font-size:0.87rem; line-height:1.55; margin:0 0 10px; color:var(--ink); }
+  .lesson-content ul{ padding-left:18px; margin:0 0 14px; font-size:0.87rem; line-height:1.55; }
+  .lesson-content li{ margin-bottom:6px; }
+
+  .qprogress{ font-size:0.78rem; color:var(--ink-muted); margin-bottom:6px; font-family:'SFMono-Regular',Consolas,monospace; }
+  .qtext{ font-size:1rem; font-weight:700; margin-bottom:14px; line-height:1.4; font-family:Rockwell,'Roboto Slab',Georgia,serif; }
+  .option{
+    display:block; width:100%; text-align:left; background:var(--paper);
+    border:1px solid var(--line); border-radius:3px; padding:11px 13px; margin-bottom:8px;
+    font-size:0.88rem; color:var(--ink); cursor:pointer; font-family:inherit;
+  }
+  .option.correct{ border-color:var(--good); background:rgba(47,158,100,0.12); }
+  .option.wrong{ border-color:var(--bad); background:rgba(224,53,111,0.12); }
+  .option[disabled]{ cursor:default; }
+  .explain{ font-size:0.82rem; color:var(--ink-muted); margin:6px 0 14px; line-height:1.4; padding-left:10px; border-left:2px solid var(--line); }
+
+  .sweetnote{
+    border:1px solid var(--line); border-radius:3px; padding:15px; margin:14px 0;
+    background:var(--paper); font-size:0.9rem; line-height:1.55; font-style:italic;
+  }
+  .sweetnote .sign{ display:block; margin-top:10px; text-align:right; font-style:normal; font-weight:700; color:var(--stamp); }
+
+  /* ---- Dose Check ---- */
+  .dose-prompt{ text-align:center; font-size:1rem; font-weight:700; margin:10px 0 18px; line-height:1.5; font-family:Rockwell,'Roboto Slab',Georgia,serif; }
+  .dose-input-row{ display:flex; align-items:center; gap:8px; margin-bottom:14px; }
+  .dose-input{
+    flex:1; font-size:1.1rem; padding:11px 13px; border:1px solid var(--line); border-radius:3px;
+    background:var(--paper); color:var(--ink); font-family:'SFMono-Regular',Consolas,monospace;
+  }
+  .dose-input:focus{ outline:2px solid var(--pulse); outline-offset:1px; }
+  .dose-unit{ font-size:0.85rem; color:var(--ink-muted); min-width:64px; }
+
+  /* ---- Settings ---- */
+  .settings-row{
+    display:flex; align-items:center; justify-content:space-between;
+    border:1px solid var(--line); border-radius:4px; padding:14px; margin-bottom:12px;
+    background:var(--paper);
+  }
+  .settings-label{ font-weight:700; font-size:0.95rem; }
+  .settings-sub{ font-size:0.78rem; color:var(--ink-muted); margin-top:2px; }
+  .switch{ position:relative; display:inline-block; width:46px; height:26px; flex-shrink:0; }
+  .switch input{ opacity:0; width:0; height:0; position:absolute; }
+  .switch-track{
+    position:absolute; cursor:pointer; inset:0; background:var(--line);
+    border-radius:999px; transition:background 0.2s;
+  }
+  .switch-track::before{
+    content:""; position:absolute; height:20px; width:20px; left:3px; bottom:3px;
+    background:#fff; border-radius:50%; transition:transform 0.2s; box-shadow:0 1px 2px rgba(0,0,0,0.25);
+  }
+  .switch input:checked + .switch-track{ background:var(--pulse); }
+  .switch input:checked + .switch-track::before{ transform:translateX(20px); }
+  .switch input:focus-visible + .switch-track{ outline:2px solid var(--pulse); outline-offset:2px; }
+</style>
+</head>
+<body>
+<div class="hearts-bg" id="heartsBg"></div>
+<audio id="bgMusic" loop>
+  <source src="music.mp3" type="audio/mpeg">
+</audio>
+<div class="wrap">
+  <div class="card" id="cardRoot">
+
+    <!-- MAIN MENU -->
+    <div class="screen" id="menuScreen">
+      <div class="headband">
+        <div>
+          <div class="title">Vital Arcade</div>
+          <div class="subtitle">Nursing skills practice</div>
+        </div>
+        <button class="icon-btn" id="settingsBtn" aria-label="Open settings">⚙ Settings</button>
+      </div>
+      <div class="dedication">A game for kristal</div>
+
+      <div class="modecard" data-tag="Mode 1">
+        <h3>Pulse Rush</h3>
+        <p>A pulse point flashes, tap the right spot on the body before time runs out. Chain correct taps for combo points.</p>
+        <button class="primary-btn" id="playPulseBtn">Play Pulse Rush</button>
+      </div>
+
+      <div class="modecard" data-tag="Mode 2">
+        <h3>Lessons</h3>
+        <p>Short lessons for 1st year nursing students. Each one ends with 5 questions to check what you learned.</p>
+        <button class="primary-btn" id="playLessonsBtn">Open Lessons</button>
+      </div>
+
+      <div class="modecard" data-tag="Mode 3">
+        <h3>Dose Check</h3>
+        <p>Quick dosage calculation drills — tablets, liquid meds, and IV flow rates. Type your answer before time runs out.</p>
+        <button class="primary-btn" id="playDoseBtn">Play Dose Check</button>
+      </div>
+
+      <div class="bestscore" id="bestScoreLine">&nbsp;</div>
+      <div class="bestscore" id="lessonProgressLine">&nbsp;</div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="screen hidden" id="settingsScreen">
+      <div class="headband">
+        <h2 style="font-size:1.1rem;">Settings</h2>
+        <button class="icon-btn" id="settingsBackBtn" aria-label="Back to main menu">Menu</button>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">Music</div>
+          <div class="settings-sub">Background music loop</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="musicToggle" aria-label="Toggle background music">
+          <span class="switch-track"></span>
+        </label>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">Sound Effects</div>
+          <div class="settings-sub">Correct / incorrect beeps</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="sfxToggle" aria-label="Toggle sound effects">
+          <span class="switch-track"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- PULSE RUSH GAME -->
+    <div class="screen hidden" id="pulseGame">
+      <div class="headband">
+        <button class="icon-btn" id="pulseBackBtn" aria-label="Back to main menu">Menu</button>
+        <button class="icon-btn" id="pauseBtn" aria-label="Pause game">Pause</button>
+      </div>
+      <div class="hud">
+        <span>Round <b id="roundNum">1</b>/<b id="roundTotal">8</b></span>
+        <span class="streak">Streak <span id="streak">0</span></span>
+        <span>Score <b id="score">0</b></span>
+      </div>
+      <div class="timerbar"><div class="timerfill" id="timerfill"></div></div>
+      <div class="prompt">Find: <span id="term">—</span></div>
+      <div class="stage" id="stage">
+        <svg viewBox="0 0 300 520" xmlns="http://www.w3.org/2000/svg" id="bodySvg">
+          <circle cx="150" cy="55" r="38" fill="var(--paper2)" stroke="var(--ink-muted)" stroke-width="1.5"/>
+          <rect x="115" y="95" width="70" height="150" rx="14" fill="var(--paper2)" stroke="var(--ink-muted)" stroke-width="1.5"/>
+          <rect x="55" y="105" width="38" height="150" rx="10" fill="var(--paper2)" stroke="var(--ink-muted)" stroke-width="1.5" transform="rotate(8 74 180)"/>
+          <rect x="207" y="105" width="38" height="150" rx="10" fill="var(--paper2)" stroke="var(--ink-muted)" stroke-width="1.5" transform="rotate(-8 226 180)"/>
+          <rect x="120" y="235" width="30" height="170" rx="8" fill="var(--paper2)" stroke="var(--ink-muted)" stroke-width="1.5"/>
+          <rect x="150" y="235" width="30" height="170" rx="8" fill="var(--paper2)" stroke="var(--ink-muted)" stroke-width="1.5"/>
+          <g id="dots"></g>
+        </svg>
+        <div class="pauseOverlay hidden" id="pauseOverlay">
+          <h2>Paused</h2>
+          <button class="primary-btn" id="resumeBtn" aria-label="Resume game">Resume</button>
+          <button class="ghost-btn" id="pauseMenuBtn" aria-label="Quit to main menu">Main Menu</button>
+        </div>
+      </div>
+      <div class="feedback" id="feedback">&nbsp;</div>
+    </div>
+
+    <!-- PULSE RUSH RESULT -->
+    <div class="screen hidden result" id="pulseResult">
+      <div class="subtitle">Round complete</div>
+      <div class="score" id="finalScore">0/8</div>
+      <div class="best" id="bestLine">Best: 0/8</div>
+      <button class="primary-btn" id="playAgainBtn">Play Again</button>
+      <button class="ghost-btn" id="resultMenuBtn">Back to Menu</button>
+    </div>
+
+    <!-- LESSON LIST -->
+    <div class="screen hidden" id="lessonList">
+      <div class="headband">
+        <h2 style="font-size:1.1rem;">Lessons</h2>
+        <button class="icon-btn" id="listBackBtn" aria-label="Back to main menu">Menu</button>
+      </div>
+      <div id="lessonItems"></div>
+    </div>
+
+    <!-- LESSON CONTENT -->
+    <div class="screen hidden" id="lessonContent">
+      <div class="headband">
+        <div class="lesson-title" id="lcTitle"></div>
+        <button class="icon-btn" id="contentBackBtn" aria-label="Back to lessons list">Lessons</button>
+      </div>
+      <div class="lesson-content" id="lcBody"></div>
+      <button class="primary-btn" id="startQuizBtn">Start quiz — 5 questions</button>
+    </div>
+
+    <!-- LESSON QUIZ -->
+    <div class="screen hidden" id="lessonQuiz">
+      <div class="qprogress">Question <span id="qNum">1</span> of <span id="qTotal">5</span> — Score <span id="qScore">0</span></div>
+      <div class="qtext" id="qText"></div>
+      <div id="qOptions"></div>
+      <div class="explain hidden" id="qExplain"></div>
+      <button class="primary-btn hidden" id="qNextBtn">Next</button>
+    </div>
+
+    <!-- LESSON COMPLETE -->
+    <div class="screen hidden result" id="lessonComplete">
+      <div class="subtitle" id="lcCompleteTitle">Lesson complete</div>
+      <div class="score" id="lcFinalScore">0/5</div>
+      <div class="sweetnote" id="sweetNote">
+        <span id="sweetText"></span>
+        <span class="sign">— cj</span>
+      </div>
+      <button class="primary-btn" id="backToLessonsBtn">Back to Lessons</button>
+      <button class="ghost-btn" id="lcMenuBtn">Back to Menu</button>
+    </div>
+
+    <!-- DOSE CHECK GAME -->
+    <div class="screen hidden" id="doseGame">
+      <div class="headband">
+        <button class="icon-btn" id="doseBackBtn" aria-label="Back to main menu">Menu</button>
+        <button class="icon-btn" id="dosePauseBtn" aria-label="Pause game">Pause</button>
+      </div>
+      <div class="hud">
+        <span>Round <b id="doseRoundNum">1</b>/<b id="doseRoundTotal">8</b></span>
+        <span class="streak">Streak <span id="doseStreak">0</span></span>
+        <span>Score <b id="doseScore">0</b></span>
+      </div>
+      <div class="timerbar"><div class="timerfill" id="doseTimerfill"></div></div>
+      <div class="dose-prompt" id="dosePrompt">—</div>
+      <div class="dose-input-row">
+        <input type="text" inputmode="decimal" id="doseInput" class="dose-input" placeholder="Answer" aria-label="Enter your answer">
+        <span class="dose-unit" id="doseUnit"></span>
+      </div>
+      <button class="primary-btn" id="doseSubmitBtn">Submit</button>
+      <div class="feedback" id="doseFeedback">&nbsp;</div>
+      <div class="pauseOverlay hidden" id="dosePauseOverlay">
+        <h2>Paused</h2>
+        <button class="primary-btn" id="doseResumeBtn" aria-label="Resume game">Resume</button>
+        <button class="ghost-btn" id="dosePauseMenuBtn" aria-label="Quit to main menu">Main Menu</button>
+      </div>
+    </div>
+
+    <!-- DOSE CHECK RESULT -->
+    <div class="screen hidden result" id="doseResult">
+      <div class="subtitle">Dose Check complete</div>
+      <div class="score" id="doseFinalScore">0/8</div>
+      <div class="best" id="doseBestLine">Best: 0/8</div>
+      <button class="primary-btn" id="dosePlayAgainBtn">Play Again</button>
+      <button class="ghost-btn" id="doseResultMenuBtn">Back to Menu</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* ---------------- Floating pixel hearts background ---------------- */
+(function spawnHeartsBg(){
+  const bg = document.getElementById('heartsBg');
+  const colors = ['#ff8fab', '#ffb3c6', '#ffffff', '#ff5c96'];
+  const n = 16;
+  for(let i=0;i<n;i++){
+    const wrap = document.createElement('div');
+    wrap.className = 'heart-particle';
+    const left = Math.random()*100;
+    const dur = 11 + Math.random()*11;
+    const delay = -Math.random()*dur;
+    const scale = 0.6 + Math.random()*1.3;
+    const color = colors[i % colors.length];
+    wrap.style.left = left + '%';
+    wrap.style.animationDuration = dur.toFixed(2) + 's';
+    wrap.style.animationDelay = delay.toFixed(2) + 's';
+    wrap.style.setProperty('--s', scale.toFixed(2));
+    wrap.style.setProperty('--heart-color', color);
+    const inner = document.createElement('div');
+    inner.className = 'pixel-heart';
+    wrap.appendChild(inner);
+    bg.appendChild(wrap);
+  }
+})();
+
+/* ---------------- Settings: Music & SFX ---------------- */
+const bgMusic = document.getElementById('bgMusic');
+const musicToggle = document.getElementById('musicToggle');
+const sfxToggle = document.getElementById('sfxToggle');
+
+let sfxEnabled = getStore('sfxOn','1') !== '0';
+
+function isMusicOn(){ return getStore('musicOn','1') !== '0'; }
+function playMusic(){ try{ bgMusic.play().catch(()=>{}); }catch(e){} }
+function pauseMusic(){ try{ bgMusic.pause(); }catch(e){} }
+
+musicToggle.checked = isMusicOn();
+sfxToggle.checked = sfxEnabled;
+
+musicToggle.addEventListener('change', ()=>{
+  setStore('musicOn', musicToggle.checked ? '1' : '0');
+  if(musicToggle.checked) playMusic(); else pauseMusic();
+});
+sfxToggle.addEventListener('change', ()=>{
+  sfxEnabled = sfxToggle.checked;
+  setStore('sfxOn', sfxEnabled ? '1' : '0');
+});
+document.getElementById('settingsBtn').addEventListener('click', ()=> show('settingsScreen'));
+document.getElementById('settingsBackBtn').addEventListener('click', ()=> goToMenu());
+
+// Browsers block autoplay until the first user gesture — start music on first tap/click if it's enabled
+document.addEventListener('click', ()=>{ if(isMusicOn()) playMusic(); }, { once:true });
+
+/* ---------------- Shared helpers ---------------- */
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+}
+function vibrate(ms){ try{ if(navigator.vibrate) navigator.vibrate(ms); }catch(e){} }
+let audioCtx = null;
+function beep(freq, dur, type){
+  if(!sfxEnabled) return;
+  try{
+    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = type || 'sine';
+    o.frequency.value = freq;
+    g.gain.setValueAtTime(0.12, audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(); o.stop(audioCtx.currentTime + dur);
+  }catch(e){}
+}
+function shuffled(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+function getStore(key, fallback){
+  try{ const v = localStorage.getItem(key); return v === null ? fallback : v; }catch(e){ return fallback; }
+}
+function setStore(key, val){ try{ localStorage.setItem(key, val); }catch(e){} }
+
+/* ---------------- Menu ---------------- */
+document.getElementById('playPulseBtn').addEventListener('click', ()=>{ show('pulseGame'); newPulseGame(); });
+document.getElementById('playLessonsBtn').addEventListener('click', ()=>{ show('lessonList'); renderLessonList(); });
+document.getElementById('pulseBackBtn').addEventListener('click', ()=>{ stopTimerLoop(); goToMenu(); });
+document.getElementById('listBackBtn').addEventListener('click', goToMenu);
+document.getElementById('contentBackBtn').addEventListener('click', ()=>{ show('lessonList'); renderLessonList(); });
+document.getElementById('resultMenuBtn').addEventListener('click', goToMenu);
+document.getElementById('lcMenuBtn').addEventListener('click', goToMenu);
+document.getElementById('backToLessonsBtn').addEventListener('click', ()=>{ show('lessonList'); renderLessonList(); });
+
+function goToMenu(){
+  show('menuScreen');
+  refreshBestLine();
+  refreshLessonProgress();
+}
+function refreshBestLine(){
+  const b = parseInt(getStore('pulseRushBest','0'),10);
+  document.getElementById('bestScoreLine').textContent = b > 0 ? ('Best Pulse Rush score: ' + b + '/' + POINTS.length) : '\u00A0';
+}
+function refreshLessonProgress(){
+  const doneCount = LESSONS.filter(l=>getLessonBest(l.id)).length;
+  document.getElementById('lessonProgressLine').textContent = doneCount > 0 ? ('Lessons completed: ' + doneCount + '/' + LESSONS.length) : '\u00A0';
+}
+
+/* ================= PULSE RUSH ================= */
+const POINTS = [
+  { id:'temporal', name:'Temporal artery', x:118, y:38 },
+  { id:'carotid',  name:'Carotid artery',  x:150, y:98 },
+  { id:'apical',   name:'Apical pulse',    x:138, y:185 },
+  { id:'brachial_l', name:'Brachial artery', x:66, y:210 },
+  { id:'radial_l',   name:'Radial artery',  x:60, y:255 },
+  { id:'brachial_r', name:'Brachial artery', x:234, y:210 },
+  { id:'femoral_l', name:'Femoral artery', x:128, y:258 },
+  { id:'popliteal_l', name:'Popliteal artery', x:133, y:328 },
+  { id:'post_tibial_l', name:'Posterior tibial artery', x:118, y:396 },
+  { id:'dorsalis_l', name:'Dorsalis pedis artery', x:146, y:402 }
+];
+const ROUND_TIME = 5000;
+const dotsG = document.getElementById('dots');
+const bodySvg = document.getElementById('bodySvg');
+const termEl = document.getElementById('term');
+const scoreEl = document.getElementById('score');
+const streakEl = document.getElementById('streak');
+const roundNumEl = document.getElementById('roundNum');
+const roundTotalEl = document.getElementById('roundTotal');
+const timerfill = document.getElementById('timerfill');
+const feedbackEl = document.getElementById('feedback');
+const finalScoreEl = document.getElementById('finalScore');
+const bestLine = document.getElementById('bestLine');
+const cardRoot = document.getElementById('cardRoot');
+const pauseOverlay = document.getElementById('pauseOverlay');
+roundTotalEl.textContent = POINTS.length;
+refreshBestLine();
+
+let order = [], idx = 0, score = 0, streak = 0, locked = false;
+let paused = false, rafId = null, roundStartAt = 0, pausedAt = 0, pausedAccum = 0, currentRoundTime = ROUND_TIME;
+
+function spawnParticles(cx, cy){
+  const colors = ['#ff4f93','#ff8fab','#c2185b','#2f9e64'];
+  for(let i=0;i<8;i++){
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.background = colors[i % colors.length];
+    p.style.left = cx + 'px'; p.style.top = cy + 'px';
+    document.body.appendChild(p);
+    const angle = (Math.PI * 2 * i) / 8;
+    const dist = 34 + Math.random() * 26;
+    const dx = Math.cos(angle) * dist, dy = Math.sin(angle) * dist;
+    p.animate([
+      { transform:'translate(0,0)', opacity:1 },
+      { transform:`translate(${dx}px, ${dy}px)`, opacity:0 }
+    ], { duration:550, easing:'ease-out' });
+    setTimeout(()=>p.remove(), 570);
+  }
+}
+function svgPointToScreen(cx, cy){
+  const pt = bodySvg.createSVGPoint();
+  pt.x = cx; pt.y = cy;
+  const m = bodySvg.getScreenCTM();
+  if(!m) return {x: window.innerWidth/2, y: window.innerHeight/2};
+  const sp = pt.matrixTransform(m);
+  return { x: sp.x, y: sp.y };
+}
+function renderDots(){
+  dotsG.innerHTML = '';
+  POINTS.forEach(p=>{
+    // larger invisible hit target for real fingers
+    const hit = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    hit.setAttribute('cx', p.x); hit.setAttribute('cy', p.y); hit.setAttribute('r', 22);
+    hit.setAttribute('fill', 'transparent');
+    hit.classList.add('dot-hit'); hit.dataset.id = p.id;
+    hit.addEventListener('click', ()=>handleTap(p.id));
+    dotsG.appendChild(hit);
+
+    // visible dot
+    const visible = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    visible.setAttribute('cx', p.x); visible.setAttribute('cy', p.y); visible.setAttribute('r', 11);
+    visible.setAttribute('fill', 'var(--pulse)');
+    visible.classList.add('dot-visible'); visible.dataset.id = p.id;
+    const title = document.createElementNS('http://www.w3.org/2000/svg','title');
+    title.textContent = p.name;
+    visible.appendChild(title);
+    dotsG.appendChild(visible);
+  });
+}
+function getVisibleDot(id){ return dotsG.querySelector(`.dot-visible[data-id="${id}"]`); }
+function stopTimerLoop(){
+  if(rafId) cancelAnimationFrame(rafId);
+  rafId = null;
+}
+function tick(){
+  if(paused) return;
+  const elapsed = Date.now() - roundStartAt - pausedAccum;
+  const remaining = Math.max(0, currentRoundTime - elapsed);
+  timerfill.style.transform = `scaleX(${remaining / currentRoundTime})`;
+  if(remaining <= 0){
+    onTimeout(order[idx]);
+    return;
+  }
+  rafId = requestAnimationFrame(tick);
+}
+function startRound(){
+  if(idx >= order.length) return finishPulseGame();
+  locked = false; paused = false;
+  pauseOverlay.classList.add('hidden');
+  feedbackEl.textContent = '\u00A0'; feedbackEl.className = 'feedback';
+  roundNumEl.textContent = idx+1;
+  const current = order[idx];
+  termEl.textContent = current.name;
+  [...dotsG.querySelectorAll('.dot-visible')].forEach(c=>c.setAttribute('fill','var(--pulse)'));
+  timerfill.style.transform = 'scaleX(1)';
+  // difficulty ramp: rounds get a little faster as you go, floor at 2.2s
+  currentRoundTime = Math.max(2200, ROUND_TIME - idx * 350);
+  roundStartAt = Date.now();
+  pausedAccum = 0;
+  stopTimerLoop();
+  rafId = requestAnimationFrame(tick);
+}
+function onTimeout(current){
+  if(locked) return;
+  locked = true; stopTimerLoop();
+  streak = 0; streakEl.textContent = streak;
+  highlightCorrect(current.id);
+  feedbackEl.textContent = "Time's up — that was " + current.name;
+  feedbackEl.className = 'feedback bad';
+  setTimeout(nextPulseRound, 1100);
+}
+function highlightCorrect(id){
+  const el = getVisibleDot(id);
+  if(el) el.setAttribute('fill','var(--good)');
+}
+function handleTap(id){
+  if(locked || paused) return;
+  const current = order[idx];
+  stopTimerLoop();
+  locked = true;
+  const el = getVisibleDot(id);
+  const cx = parseFloat(el.getAttribute('cx')), cy = parseFloat(el.getAttribute('cy'));
+  const screenPt = svgPointToScreen(cx, cy);
+  if(id === current.id){
+    el.setAttribute('fill','var(--good)');
+    streak++;
+    const bonus = streak >= 3 ? 1 : 0;
+    score += 1 + bonus;
+    scoreEl.textContent = score; streakEl.textContent = streak;
+    feedbackEl.textContent = bonus ? ('Correct — combo x' + streak) : 'Correct';
+    feedbackEl.className = 'feedback good';
+    spawnParticles(screenPt.x, screenPt.y);
+    beep(880, 0.12, 'triangle'); vibrate(30);
+  } else {
+    el.setAttribute('fill','var(--bad)');
+    highlightCorrect(current.id);
+    streak = 0; streakEl.textContent = streak;
+    feedbackEl.textContent = 'Not quite — that was ' + current.name;
+    feedbackEl.className = 'feedback bad';
+    beep(160, 0.2, 'sawtooth'); vibrate([20,40,20]);
+    cardRoot.classList.remove('shake'); void cardRoot.offsetWidth; cardRoot.classList.add('shake');
+  }
+  setTimeout(nextPulseRound, 1100);
+}
+function nextPulseRound(){ idx++; startRound(); }
+function finishPulseGame(){
+  stopTimerLoop();
+  show('pulseResult');
+  finalScoreEl.textContent = score + '/' + order.length;
+  const best = parseInt(getStore('pulseRushBest','0'),10);
+  if(score > best){ setStore('pulseRushBest', String(score)); bestLine.textContent = 'New best: ' + score + '/' + order.length; }
+  else{ bestLine.textContent = 'Best: ' + best + '/' + order.length; }
+}
+function newPulseGame(){
+  order = shuffled(POINTS); idx = 0; score = 0; streak = 0;
+  scoreEl.textContent = 0; streakEl.textContent = 0;
+  renderDots(); startRound();
+}
+document.getElementById('playAgainBtn').addEventListener('click', ()=>{ show('pulseGame'); newPulseGame(); });
+
+/* ---- Pause controls ---- */
+document.getElementById('pauseBtn').addEventListener('click', ()=>{
+  if(locked || paused) return;
+  paused = true;
+  pausedAt = Date.now();
+  stopTimerLoop();
+  pauseOverlay.classList.remove('hidden');
+});
+document.getElementById('resumeBtn').addEventListener('click', ()=>{
+  if(!paused) return;
+  pausedAccum += Date.now() - pausedAt;
+  paused = false;
+  pauseOverlay.classList.add('hidden');
+  rafId = requestAnimationFrame(tick);
+});
+document.getElementById('pauseMenuBtn').addEventListener('click', ()=>{
+  paused = false;
+  stopTimerLoop();
+  pauseOverlay.classList.add('hidden');
+  show('menuScreen');
+  refreshBestLine();
+});
+
+/* ================= LESSONS ================= */
+const LESSONS = [
+  {
+    id:'vitals',
+    title:'Vital Signs Basics',
+    content:[
+      'Vital signs are the core measurements nurses check to track a patient\'s basic body functions: temperature, pulse, respiration, and blood pressure. Pain is often treated as an additional vital sign.',
+      'Normal ranges for a healthy adult:',
+      ['Temperature: about 36.5–37.5°C (97.7–99.5°F)',
+       'Pulse: 60–100 beats per minute',
+       'Respiration: 12–20 breaths per minute',
+       'Blood pressure: around 120/80 mmHg']
+    ],
+    sweet:'Ang galing mo baby hehe',
+    questions:[
+      { q:'What is the normal adult pulse rate range?', options:['40–60 bpm','60–100 bpm','100–140 bpm','150–180 bpm'], correct:1, explain:'A healthy resting adult pulse is typically 60–100 beats per minute.' },
+      { q:'Which vital sign is often treated as an additional ("fifth") vital sign?', options:['Weight','Pain','Height','Skin color'], correct:1, explain:'Pain assessment is commonly included alongside the four classic vital signs.' },
+      { q:'Normal adult respiratory rate is:', options:['6–10 breaths/min','12–20 breaths/min','24–30 breaths/min','30–40 breaths/min'], correct:1, explain:'12–20 breaths per minute is the expected range for a resting healthy adult.' },
+      { q:'A blood pressure of 120/80 mmHg is generally considered:', options:['Hypotensive','Normal','A hypertensive crisis','Irregular'], correct:1, explain:'120/80 mmHg is the commonly cited normal adult blood pressure.' },
+      { q:'Where is the radial pulse most commonly taken?', options:['Neck','Wrist','Groin','Ankle'], correct:1, explain:'The radial pulse is felt at the wrist, on the thumb side.' }
+    ]
+  },
+  {
+    id:'hygiene',
+    title:'Hand Hygiene & Infection Control',
+    content:[
+      'Hand hygiene is considered the single most effective way to prevent the spread of infection in a healthcare setting.',
+      'Key points to remember:',
+      ['The WHO describes 5 key moments for hand hygiene around patient contact',
+       'Alcohol-based hand rub is preferred when hands are not visibly soiled',
+       'Soap and water should be used when hands are visibly dirty',
+       'Proper handwashing should last at least 20 seconds',
+       'Standard precautions apply to every patient, regardless of diagnosis']
+    ],
+    sweet:'RN Baluyot? hehehhe mwwaaaaaa.',
+    questions:[
+      { q:'What is the minimum recommended duration for handwashing with soap and water?', options:['5 seconds','20 seconds','2 minutes','10 minutes'], correct:1, explain:'At least 20 seconds is needed for effective handwashing.' },
+      { q:'When should alcohol-based hand rub NOT be used?', options:['Before touching a patient','After a clean procedure','When hands are visibly soiled','Before an aseptic procedure'], correct:2, explain:'Visibly soiled hands need soap and water, not hand rub alone.' },
+      { q:'How many key moments for hand hygiene does the WHO describe?', options:['3','5','7','10'], correct:1, explain:'The WHO\'s "5 Moments for Hand Hygiene" is a widely used framework.' },
+      { q:'Standard precautions should be applied to:', options:['Only patients with known infections','Only surgical patients','All patients, regardless of diagnosis','Only pediatric patients'], correct:2, explain:'Standard precautions are used with every patient to reduce infection risk.' },
+      { q:'What is considered the single most effective way to prevent the spread of infection?', options:['Wearing gloves at all times','Hand hygiene','Wearing a mask','Isolation rooms only'], correct:1, explain:'Consistent, proper hand hygiene remains the top infection-control measure.' }
+    ]
+  },
+  {
+    id:'safety',
+    title:'Body Mechanics & Patient Safety',
+    content:[
+      'Good body mechanics protect both the nurse and the patient from injury during lifting, moving, or transferring.',
+      'Basic principles to apply every time:',
+      ['Keep feet shoulder-width apart for a stable base',
+       'Bend at the knees, not the waist, when lifting',
+       'Keep the patient or object close to your body to reduce strain',
+       'Use assistive devices such as gait belts or transfer boards when available',
+       'Always assess the patient\'s mobility and ask for help with heavy or unstable transfers']
+    ],
+    sweet:'Galing parin ng baby ko, nakaka-proud kaaaa',
+    questions:[
+      { q:'When lifting, you should bend at the:', options:['Waist','Knees','Neck','Hips only'], correct:1, explain:'Bending the knees protects the lower back during a lift.' },
+      { q:'Keeping an object or patient close to your body while lifting helps to:', options:['Increase strain','Reduce strain on your back','Improve the patient\'s balance only','Nothing in particular'], correct:1, explain:'Keeping the load close reduces leverage on your spine.' },
+      { q:'A device used to safely assist a patient transfer is called a:', options:['Stethoscope','Gait belt','Otoscope','Sphygmomanometer'], correct:1, explain:'A gait belt gives a secure hold for assisted walking or transfers.' },
+      { q:'What is the recommended foot position when lifting?', options:['Feet together','Shoulder-width apart','Crossed','On tiptoes'], correct:1, explain:'A shoulder-width stance gives a stable base of support.' },
+      { q:'Before transferring a patient, a nurse should first:', options:['Skip assessment to save time','Assess the patient\'s mobility and get help if needed','Always do it alone','Ignore the care plan'], correct:1, explain:'Assessing mobility first helps prevent falls and injury.' }
+    ]
+  },
+  {
+    id:'process',
+    title:'The Nursing Process (ADPIE)',
+    content:[
+      'The nursing process is a systematic, five-step method nurses use to plan and deliver patient care. It is often remembered by the acronym ADPIE.',
+      'The five steps, in order:',
+      ['Assessment — collecting data about the patient (history, vital signs, observations)',
+       'Diagnosis — identifying the patient\'s actual or potential health problems',
+       'Planning — setting goals and expected outcomes with the patient',
+       'Implementation — carrying out the planned nursing interventions',
+       'Evaluation — checking whether the goals were met and adjusting the plan if needed']
+    ],
+    sweet:'Grabe, natapos mo na naman ang isang lessonnn kisss kita madami',
+    questions:[
+      { q:'What does the acronym ADPIE stand for?', options:['Assessment, Diagnosis, Planning, Implementation, Evaluation','Admission, Discharge, Planning, Intervention, Exit','Assessment, Documentation, Prescription, Intervention, Exit','Analysis, Diagnosis, Prognosis, Intervention, Exam'], correct:0, explain:'ADPIE is the five-step nursing process: Assessment, Diagnosis, Planning, Implementation, Evaluation.' },
+      { q:'Collecting data such as vital signs and patient history happens in which step?', options:['Diagnosis','Assessment','Planning','Evaluation'], correct:1, explain:'Assessment is the data-gathering step that everything else is built on.' },
+      { q:'Identifying the patient\'s actual or potential health problems happens in which step?', options:['Assessment','Diagnosis','Implementation','Evaluation'], correct:1, explain:'The Diagnosis step names the health problems the plan of care will address.' },
+      { q:'Setting goals and expected outcomes with the patient belongs to which step?', options:['Planning','Implementation','Assessment','Diagnosis'], correct:0, explain:'Planning is where specific, measurable goals are set before acting.' },
+      { q:'Which step involves checking whether the goals were met?', options:['Implementation','Diagnosis','Evaluation','Assessment'], correct:2, explain:'Evaluation closes the loop by checking progress and adjusting the plan if needed.' }
+    ]
+  },
+  {
+    id:'medrights',
+    title:'Medication Administration — The Rights',
+    content:[
+      'Safe medication administration relies on checking a set of "rights" before giving any drug. This habit is one of the most important safety checks a nurse performs every shift.',
+      'The classic rights to check every time:',
+      ['Right patient — confirm identity with two identifiers',
+       'Right drug — verify it matches the order',
+       'Right dose — check the amount against the order',
+       'Right route — oral, IV, IM, etc., as prescribed',
+       'Right time — give it within the correct schedule',
+       'Right documentation — chart it immediately after giving it']
+    ],
+    sweet:'galinggg another lesson, now.. kiss or lap~ hehehe',
+    questions:[
+      { q:'How many classic "rights" of medication administration are commonly taught?', options:['3','5 or 6','10','2'], correct:1, explain:'Most programs teach 5 to 6 core rights: patient, drug, dose, route, time, and documentation.' },
+      { q:'Confirming a patient\'s identity with two identifiers before giving a medication checks which right?', options:['Right patient','Right route','Right time','Right drug'], correct:0, explain:'Right patient means verifying identity, usually with two identifiers like name and birthdate.' },
+      { q:'Giving a medication by the prescribed method (oral, IV, IM) checks which right?', options:['Right dose','Right route','Right documentation','Right time'], correct:1, explain:'Right route confirms the medication is given the way it was ordered.' },
+      { q:'Charting a medication immediately after giving it fulfills which right?', options:['Right dose','Right patient','Right documentation','Right drug'], correct:2, explain:'Right documentation means recording the medication promptly and accurately.' },
+      { q:'If a medication order seems unclear or incorrect, the nurse should first:', options:['Give it anyway to save time','Skip the dose without telling anyone','Clarify with the prescriber before giving it','Give half the dose as a compromise'], correct:2, explain:'Any unclear or questionable order should be clarified with the prescriber before administration.' }
+    ]
+  },
+  {
+    id:'communication',
+    title:'Therapeutic Communication',
+    content:[
+      'Therapeutic communication is a set of techniques nurses use to build trust, understand patients, and support their care — different from ordinary social conversation.',
+      'Common techniques to practice:',
+      ['Active listening — giving full attention and showing you are engaged',
+       'Open-ended questions — inviting the patient to share more than a yes/no answer',
+       'Reflecting or paraphrasing — restating what the patient said in your own words',
+       'Using silence purposefully — giving the patient time to think or respond',
+       'Avoiding false reassurance — not promising outcomes you cannot guarantee']
+    ],
+    sweet:'kape muna tayo baby',
+    questions:[
+      { q:'Which is an example of an open-ended question?', options:['"Are you in pain?"','"How are you feeling about your treatment?"','"Did you sleep last night?"','"Is your family here?"'], correct:1, explain:'Open-ended questions invite a fuller response rather than a simple yes or no.' },
+      { q:'Restating what a patient said in your own words is called:', options:['False reassurance','Reflecting or paraphrasing','Closed questioning','Giving advice'], correct:1, explain:'Reflecting shows the patient you understood, and lets them confirm or clarify.' },
+      { q:'Why should nurses avoid giving false reassurance (e.g. "everything will be fine")?', options:['It saves time','It may not be true and can undermine trust','Patients prefer silence instead','It is required by law'], correct:1, explain:'False reassurance can feel dismissive and damage the patient\'s trust if things do not turn out fine.' },
+      { q:'Active listening mainly involves:', options:['Interrupting to give advice quickly','Giving full attention and showing engagement','Talking more than the patient','Finishing the patient\'s sentences'], correct:1, explain:'Active listening means focusing fully on the patient, not just hearing words.' },
+      { q:'Using silence purposefully during a conversation can help a patient to:', options:['Feel ignored','Have time to think or respond','End the conversation faster','Forget their concerns'], correct:1, explain:'Well-used silence gives patients space to process and share more.' }
+    ]
+  }
+];
+
+let currentLesson = null, qIndex = 0, qScore = 0;
+
+function getLessonBest(id){ return getStore('lesson_'+id+'_best', null); }
+function setLessonDone(id, sc, total){ setStore('lesson_'+id+'_best', sc + '/' + total); }
+refreshLessonProgress();
+
+function renderLessonList(){
+  const wrap = document.getElementById('lessonItems');
+  wrap.innerHTML = '';
+  LESSONS.forEach((l, i)=>{
+    const best = getLessonBest(l.id);
+    const item = document.createElement('div');
+    item.className = 'lesson-item' + (best ? ' done' : '');
+    item.innerHTML = `<div><span class="lesson-num">${i+1}.</span><span class="li-title">${l.title}</span><div class="li-sub">${l.questions.length} questions${best ? ' — best ' + best : ''}</div></div><div class="li-badge">${best ? 'Review' : 'Start'}</div>`;
+    item.addEventListener('click', ()=> openLesson(l));
+    wrap.appendChild(item);
+  });
+}
+
+function openLesson(l){
+  currentLesson = l;
+  document.getElementById('lcTitle').textContent = l.title;
+  const body = document.getElementById('lcBody');
+  body.innerHTML = '';
+  l.content.forEach(block=>{
+    if(Array.isArray(block)){
+      const ul = document.createElement('ul');
+      block.forEach(li=>{ const liEl = document.createElement('li'); liEl.textContent = li; ul.appendChild(liEl); });
+      body.appendChild(ul);
+    } else {
+      const p = document.createElement('p');
+      p.textContent = block;
+      body.appendChild(p);
+    }
+  });
+  show('lessonContent');
+}
+
+document.getElementById('startQuizBtn').addEventListener('click', ()=>{
+  qIndex = 0; qScore = 0;
+  currentLesson._shuffledQuestions = shuffled(currentLesson.questions);
+  document.getElementById('qTotal').textContent = currentLesson.questions.length;
+  show('lessonQuiz');
+  renderQuestion();
+});
+
+function renderQuestion(){
+  const q = currentLesson._shuffledQuestions[qIndex];
+  document.getElementById('qNum').textContent = qIndex + 1;
+  document.getElementById('qScore').textContent = qScore;
+  document.getElementById('qText').textContent = q.q;
+  const optWrap = document.getElementById('qOptions');
+  optWrap.innerHTML = '';
+  const explain = document.getElementById('qExplain');
+  explain.classList.add('hidden');
+  const nextBtn = document.getElementById('qNextBtn');
+  nextBtn.classList.add('hidden');
+
+  const shuffledOptions = shuffled(q.options.map((opt, i)=>({ text: opt, isCorrect: i === q.correct })));
+
+  shuffledOptions.forEach(item=>{
+    const b = document.createElement('button');
+    b.className = 'option';
+    b.textContent = item.text;
+    b.addEventListener('click', ()=>{
+      [...optWrap.children].forEach(c=>c.disabled = true);
+      if(item.isCorrect){
+        b.classList.add('correct');
+        qScore++;
+        document.getElementById('qScore').textContent = qScore;
+        beep(880, 0.12, 'triangle'); vibrate(30);
+      } else {
+        b.classList.add('wrong');
+        const correctBtn = [...optWrap.children].find(c => c.dataset.correct === 'true');
+        if(correctBtn) correctBtn.classList.add('correct');
+        beep(160, 0.2, 'sawtooth'); vibrate([20,40,20]);
+      }
+      explain.textContent = q.explain;
+      explain.classList.remove('hidden');
+      nextBtn.classList.remove('hidden');
+    });
+    b.dataset.correct = item.isCorrect ? 'true' : 'false';
+    optWrap.appendChild(b);
+  });
+}
+
+document.getElementById('qNextBtn').addEventListener('click', ()=>{
+  qIndex++;
+  if(qIndex >= currentLesson._shuffledQuestions.length){
+    finishLesson();
+  } else {
+    renderQuestion();
+  }
+});
+
+function finishLesson(){
+  setLessonDone(currentLesson.id, qScore, currentLesson._shuffledQuestions.length);
+  document.getElementById('lcCompleteTitle').textContent = currentLesson.title + ' — complete';
+  document.getElementById('lcFinalScore').textContent = qScore + '/' + currentLesson._shuffledQuestions.length;
+  document.getElementById('sweetText').textContent = currentLesson.sweet;
+  refreshLessonProgress();
+  show('lessonComplete');
+}
+
+/* ================= DOSE CHECK ================= */
+const DOSE_QUESTIONS = [
+  { prompt:'Order: 500 mg. Available: 250 mg per tablet. How many tablets?', answer:2, unit:'tablet(s)' },
+  { prompt:'Order: 750 mg. Available: 250 mg per tablet. How many tablets?', answer:3, unit:'tablet(s)' },
+  { prompt:'Order: 1 g. Available: 500 mg per tablet. How many tablets?', answer:2, unit:'tablet(s)' },
+  { prompt:'Order: 375 mg. Available: 125 mg per tablet. How many tablets?', answer:3, unit:'tablet(s)' },
+  { prompt:'Order: 600 mg. Available: 200 mg per 5 mL liquid. How many mL?', answer:15, unit:'mL' },
+  { prompt:'Order: 250 mg. Available: 125 mg per 5 mL liquid. How many mL?', answer:10, unit:'mL' },
+  { prompt:'Order: 400 mg. Available: 100 mg per mL injectable. How many mL?', answer:4, unit:'mL' },
+  { prompt:'IV: 1200 mL over 8 hours, drop factor 20 gtt/mL. Flow rate in gtt/min?', answer:50, unit:'gtt/min' },
+  { prompt:'IV: 500 mL over 5 hours, drop factor 15 gtt/mL. Flow rate in gtt/min?', answer:25, unit:'gtt/min' }
+];
+const DOSE_ROUND_TIME = 18000;
+
+const doseRoundNumEl = document.getElementById('doseRoundNum');
+const doseRoundTotalEl = document.getElementById('doseRoundTotal');
+const doseScoreEl = document.getElementById('doseScore');
+const doseStreakEl = document.getElementById('doseStreak');
+const doseTimerfill = document.getElementById('doseTimerfill');
+const dosePromptEl = document.getElementById('dosePrompt');
+const doseInputEl = document.getElementById('doseInput');
+const doseUnitEl = document.getElementById('doseUnit');
+const doseFeedbackEl = document.getElementById('doseFeedback');
+const doseFinalScoreEl = document.getElementById('doseFinalScore');
+const doseBestLineEl = document.getElementById('doseBestLine');
+const dosePauseOverlay = document.getElementById('dosePauseOverlay');
+doseRoundTotalEl.textContent = DOSE_QUESTIONS.length;
+
+let doseOrder = [], doseIdx = 0, doseScore = 0, doseStreak = 0, doseLocked = false;
+let dosePaused = false, doseRafId = null, doseRoundStartAt = 0, dosePausedAt = 0, dosePausedAccum = 0, doseCurrentRoundTime = DOSE_ROUND_TIME;
+
+function stopDoseTimerLoop(){ if(doseRafId) cancelAnimationFrame(doseRafId); doseRafId = null; }
+function doseTick(){
+  if(dosePaused) return;
+  const elapsed = Date.now() - doseRoundStartAt - dosePausedAccum;
+  const remaining = Math.max(0, doseCurrentRoundTime - elapsed);
+  doseTimerfill.style.transform = `scaleX(${remaining / doseCurrentRoundTime})`;
+  if(remaining <= 0){ doseOnTimeout(); return; }
+  doseRafId = requestAnimationFrame(doseTick);
+}
+function startDoseRound(){
+  if(doseIdx >= doseOrder.length) return finishDoseGame();
+  doseLocked = false; dosePaused = false;
+  dosePauseOverlay.classList.add('hidden');
+  doseFeedbackEl.textContent = '\u00A0'; doseFeedbackEl.className = 'feedback';
+  doseRoundNumEl.textContent = doseIdx + 1;
+  const q = doseOrder[doseIdx];
+  dosePromptEl.textContent = q.prompt;
+  doseUnitEl.textContent = q.unit;
+  doseInputEl.value = ''; doseInputEl.disabled = false;
+  doseInputEl.focus();
+  doseTimerfill.style.transform = 'scaleX(1)';
+  // difficulty ramp: less time per round as you go, floor at 9s (math needs more room than a tap)
+  doseCurrentRoundTime = Math.max(9000, DOSE_ROUND_TIME - doseIdx * 1200);
+  doseRoundStartAt = Date.now();
+  dosePausedAccum = 0;
+  stopDoseTimerLoop();
+  doseRafId = requestAnimationFrame(doseTick);
+}
+function doseOnTimeout(){
+  if(doseLocked) return;
+  doseLocked = true; stopDoseTimerLoop(); doseInputEl.disabled = true;
+  doseStreak = 0; doseStreakEl.textContent = doseStreak;
+  const q = doseOrder[doseIdx];
+  doseFeedbackEl.textContent = "Time's up — answer was " + q.answer + ' ' + q.unit;
+  doseFeedbackEl.className = 'feedback bad';
+  beep(160, 0.2, 'sawtooth'); vibrate([20,40,20]);
+  setTimeout(nextDoseRound, 1400);
+}
+function submitDoseAnswer(){
+  if(doseLocked || dosePaused) return;
+  doseLocked = true; stopDoseTimerLoop(); doseInputEl.disabled = true;
+  const val = parseFloat(doseInputEl.value);
+  const q = doseOrder[doseIdx];
+  const correct = !isNaN(val) && Math.abs(val - q.answer) < 0.1;
+  if(correct){
+    doseStreak++;
+    const bonus = doseStreak >= 3 ? 1 : 0;
+    doseScore += 1 + bonus;
+    doseScoreEl.textContent = doseScore; doseStreakEl.textContent = doseStreak;
+    doseFeedbackEl.textContent = bonus ? ('Correct — combo x' + doseStreak) : 'Correct';
+    doseFeedbackEl.className = 'feedback good';
+    beep(880, 0.12, 'triangle'); vibrate(30);
+  } else {
+    doseStreak = 0; doseStreakEl.textContent = doseStreak;
+    doseFeedbackEl.textContent = 'Not quite — answer was ' + q.answer + ' ' + q.unit;
+    doseFeedbackEl.className = 'feedback bad';
+    beep(160, 0.2, 'sawtooth'); vibrate([20,40,20]);
+    cardRoot.classList.remove('shake'); void cardRoot.offsetWidth; cardRoot.classList.add('shake');
+  }
+  setTimeout(nextDoseRound, 1400);
+}
+function nextDoseRound(){ doseIdx++; startDoseRound(); }
+function finishDoseGame(){
+  stopDoseTimerLoop();
+  show('doseResult');
+  doseFinalScoreEl.textContent = doseScore + '/' + doseOrder.length;
+  const best = parseInt(getStore('doseCheckBest','0'),10);
+  if(doseScore > best){ setStore('doseCheckBest', String(doseScore)); doseBestLineEl.textContent = 'New best: ' + doseScore + '/' + doseOrder.length; }
+  else{ doseBestLineEl.textContent = 'Best: ' + best + '/' + doseOrder.length; }
+}
+function newDoseGame(){
+  doseOrder = shuffled(DOSE_QUESTIONS); doseIdx = 0; doseScore = 0; doseStreak = 0;
+  doseScoreEl.textContent = 0; doseStreakEl.textContent = 0;
+  startDoseRound();
+}
+document.getElementById('playDoseBtn').addEventListener('click', ()=>{ show('doseGame'); newDoseGame(); });
+document.getElementById('dosePlayAgainBtn').addEventListener('click', ()=>{ show('doseGame'); newDoseGame(); });
+document.getElementById('doseBackBtn').addEventListener('click', ()=>{ stopDoseTimerLoop(); goToMenu(); });
+document.getElementById('doseResultMenuBtn').addEventListener('click', goToMenu);
+document.getElementById('doseSubmitBtn').addEventListener('click', submitDoseAnswer);
+doseInputEl.addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); submitDoseAnswer(); } });
+
+document.getElementById('dosePauseBtn').addEventListener('click', ()=>{
+  if(doseLocked || dosePaused) return;
+  dosePaused = true;
+  dosePausedAt = Date.now();
+  stopDoseTimerLoop();
+  dosePauseOverlay.classList.remove('hidden');
+});
+document.getElementById('doseResumeBtn').addEventListener('click', ()=>{
+  if(!dosePaused) return;
+  dosePausedAccum += Date.now() - dosePausedAt;
+  dosePaused = false;
+  dosePauseOverlay.classList.add('hidden');
+  doseRafId = requestAnimationFrame(doseTick);
+});
+document.getElementById('dosePauseMenuBtn').addEventListener('click', ()=>{
+  dosePaused = false;
+  stopDoseTimerLoop();
+  dosePauseOverlay.classList.add('hidden');
+  goToMenu();
+});
+</script>
+</body>
+</html>
